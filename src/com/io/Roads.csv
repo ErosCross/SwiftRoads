@@ -1,0 +1,51 @@
+# Roads (from, to, length, isBlocked, isOneWay)
+# Roads (from, to, length, isBlocked, isOneWay)
+A,B,1.5,false,false
+B,C,2.2,false,false
+C,D,1.8,false,false
+D,E,2.3,false,false
+E,F,2.0,false,false
+F,G,1.9,false,false
+G,H,2.4,false,false
+H,I,1.7,false,false
+I,J,2.5,false,false
+J,K,1.6,false,false
+K,L,2.1,false,false
+L,M,2.6,false,false
+M,N,1.8,false,false
+N,O,2.2,false,false
+O,P,1.9,false,false
+P,Q,2.3,false,false
+Q,R,1.7,false,false
+R,S,2.0,false,false
+S,T,1.6,false,false
+
+# One-Way Roads (only allowing traffic in one direction)
+A,C,1.0,false,true
+B,D,1.2,false,true
+C,E,1.4,false,true
+D,F,1.1,false,true
+E,G,1.8,false,true
+F,H,2.0,false,true
+G,I,1.6,false,true
+H,J,1.9,false,true
+I,K,2.1,false,true
+J,L,2.0,false,true
+K,M,1.7,false,true
+L,N,2.3,false,true
+M,O,1.8,false,true
+N,P,1.5,false,true
+O,Q,2.0,false,true
+P,R,1.6,false,true
+Q,S,2.1,false,true
+R,T,1.8,false,true
+
+# Blocked Roads (temporary unavailability)
+A,F,1.2,true,false
+B,E,1.9,true,false
+C,G,2.0,true,false
+D,H,1.7,true,false
+
+
+
+
