@@ -1,19 +1,35 @@
+/* Style for the context menu itself (light theme) */
 .context-menu {
-    -fx-background-color: #f4f4f4;
-    -fx-border-color: darkgreen;
+    -fx-background-color: #f4f4f4; /* Light background */
+    -fx-border-color: #4CAF50; /* Green border */
     -fx-border-width: 1;
-    -fx-effect: dropshadow(gaussian, rgba(0, 100, 0, 0.3), 10, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 100, 0, 0.3), 10, 0, 0, 2); /* Soft green shadow */
     -fx-padding: 5 10 5 10;
     -fx-background-radius: 8;
     -fx-border-radius: 8;
 }
 
+/* Style for the menu items (light theme) */
 .menu-item {
-    -fx-text-fill: #222;
+    -fx-text-fill: #222; /* Dark text color for readability */
     -fx-font-size: 14px;
     -fx-padding: 8 20 8 20;
 }
 
+/* Hover effect for menu items (light theme) */
+.menu-item:hover {
+    -fx-background-color: #e0e0e0; /* Light gray background on hover */
+    -fx-text-fill: #222; /* Keep text dark */
+}
+
+/* Focused state for menu items */
 .menu-item:focused {
-    -fx-background-color: #ddd;
+    -fx-background-color: #ddd; /* Slightly darker gray when focused */
+    -fx-text-fill: #222; /* Keep text dark */
+}
+
+/* Selected state (when an item is clicked or selected) */
+.menu-item:selected {
+    -fx-background-color: #c0c0c0; /* Slightly darker gray when selected */
+    -fx-text-fill: #222; /* Keep text dark */
 }

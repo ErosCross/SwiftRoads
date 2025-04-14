@@ -1,15 +1,20 @@
 package com.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Intersection {
     private String id;
     private TrafficLight trafficLight;
     private double x;
     private double y;
+    private List<Road> connectedRoads; // List of roads connected to this intersection
 
     public Intersection(String id, double x, double y) {
         this.id = id;
         this.x = x;
         this.y = y;
+        this.connectedRoads = new ArrayList<>(); // Initialize the list of connected roads
     }
 
     public String getId() {
@@ -40,6 +45,18 @@ public class Intersection {
 
     public double getY() {
         return y;
+    }
+
+    // Method to add a road to the list of connected roads
+    public void addConnectedRoad(Road road) {
+        if (road != null && !connectedRoads.contains(road)) {
+            connectedRoads.add(road);
+        }
+    }
+
+    // Method to get the list of connected roads
+    public List<Road> getConnectedRoads() {
+        return connectedRoads;
     }
 
     @Override

@@ -4,28 +4,34 @@ import com.model.CityMap;
 import com.model.Intersection;
 import com.model.Road;
 import com.model.TrafficLight;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Button;
 import javafx.scene.effect.DropShadow;
-import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
-import javafx.scene.layout.AnchorPane;
+import javafx.util.Duration;
+
+import java.util.Random;
 
 public class MapView extends Canvas {
     private static final double RADIUS = 18; // Default node radius
-    private static final double SCALE_FACTOR = 1.5; // Scale everything up by this factor
-    private CityMap cityMap;
-    private double currentOffsetX = 0;
-    private double currentOffsetY = 0;
-    public Button centerButton;
+    private static final double SCALE_FACTOR = 2.5; // Increase scaling factor for bigger map
+    private static final Random random = new Random(); // Random generator for random vehicles
 
+    private CityMap cityMap;
+
+    // Constructor
     public MapView(CityMap cityMap) {
         this.cityMap = cityMap;
         adjustCanvasSize();
         drawCity();
+
+        // Start updating vehicle counts and weights every X milliseconds
+        startVehicleUpdate();
+        startTrafficLightUpdate();
     }
 
     private void adjustCanvasSize() {
@@ -40,12 +46,13 @@ public class MapView extends Canvas {
             maxY = Math.max(maxY, intersection.getY() * SCALE_FACTOR);
         }
 
-        double width = maxX - minX + 300;
-        double height = maxY - minY + 300;
+        double width = maxX - minX + 500; // Increased the width to spread out more
+        double height = maxY - minY + 500; // Increased the height to spread out more
         setWidth(width);
         setHeight(height);
     }
 
+    // Method to update and draw the city
     public void drawCity() {
         GraphicsContext gc = getGraphicsContext2D();
         gc.setFill(Color.web("#2f2f2f")); // Dark background
@@ -63,100 +70,151 @@ public class MapView extends Canvas {
     }
 
     private void drawRoad(GraphicsContext gc, Road road) {
-        double x1 = road.getFrom().getX() * SCALE_FACTOR;
-        double y1 = road.getFrom().getY() * SCALE_FACTOR;
-        double x2 = road.getTo().getX() * SCALE_FACTOR;
-        double y2 = road.getTo().getY() * SCALE_FACTOR;
+        double[] coordinates = road.getScaledCoordinates(SCALE_FACTOR);
+        double x1 = coordinates[0];
+        double y1 = coordinates[1];
+        double x2 = coordinates[2];
+        double y2 = coordinates[3];
 
-        // Apply offset for parallel roads to prevent overlap
+        // Adjust to avoid overlap (making the roads more spaced out)
         double offsetX = 0;
         double offsetY = 0;
-
-        if (Math.abs(x1 - x2) < 10) { // Vertical roads
+        if (Math.abs(x1 - x2) < 10) {
             offsetX = road.isOneWay() ? 5 : -5;
-        } else if (Math.abs(y1 - y2) < 10) { // Horizontal roads
+        } else if (Math.abs(y1 - y2) < 10) {
             offsetY = road.isOneWay() ? 5 : -5;
         }
 
-        // Adjust coordinates for parallel roads to prevent overlap
+        // Apply offset
         x1 += offsetX * SCALE_FACTOR;
         y1 += offsetY * SCALE_FACTOR;
         x2 += offsetX * SCALE_FACTOR;
         y2 += offsetY * SCALE_FACTOR;
 
-        // Set line width first before drawing road
-        if (road.isOneWay()) {
-            gc.setLineWidth(2.5 * SCALE_FACTOR);  // Thin line for one-way roads
-            drawArrow(gc, x1, y1, x2, y2);  // Draw arrow indicating one-way direction
+        // Calculate road weight (change this as per your logic)
+        double roadWeight = road.calculateWeight();
+
+        // Set the outline color based on the number of vehicles (more vehicles = redder)
+        int vehicleCount = road.getVehicleCount();
+        Color roadOutlineColor = getOutlineColor(vehicleCount);
+
+        // Blocked roads should be drawn with a different color
+        if (road.isBlocked()) {
+            gc.setLineWidth(9 * SCALE_FACTOR);  // Increased line width for visibility
+            gc.setStroke(Color.RED);  // Change to a bright color like red to make it clearly visible
         } else {
-            gc.setLineWidth(7 * SCALE_FACTOR);  // Thicker line for two-way roads
+            if (road.isOneWay()) {
+                gc.setLineWidth(4 * SCALE_FACTOR);  // Increased width for one-way roads
+                drawArrow(gc, x1, y1, x2, y2);
+            } else {
+                gc.setLineWidth(9 * SCALE_FACTOR);  // Increased width for normal roads
+            }
+            gc.setStroke(roadOutlineColor);
         }
 
-        // Set road color (red if blocked, light gray otherwise)
-        gc.setStroke(road.isBlocked() ? Color.web("#ff4d6d") : Color.web("#9ca3af"));
         gc.strokeLine(x1, y1, x2, y2);
+
+        // Draw the weight text inside the road
+        double textX = (x1 + x2) / 2;  // Position in the middle of the road
+        double textY = (y1 + y2) / 2;  // Position in the middle of the road
+        gc.setFill(Color.WHITE);
+        gc.setFont(Font.font("Arial", 18 * SCALE_FACTOR));  // Increased font size
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.fillText(String.format("Weight: %.2f", roadWeight), textX, textY);
     }
 
     private void drawIntersection(GraphicsContext gc, Intersection inter) {
         double x = inter.getX() * SCALE_FACTOR;
         double y = inter.getY() * SCALE_FACTOR;
 
-        // Shadow
         DropShadow shadow = new DropShadow();
         shadow.setOffsetX(1.5 * SCALE_FACTOR);
         shadow.setOffsetY(1.5 * SCALE_FACTOR);
         shadow.setColor(Color.gray(0.2));
         gc.applyEffect(shadow);
 
-        // Node circle with scaling applied
-        gc.setFill(Color.web("#3b82f6")); // Blue-ish
+        gc.setFill(Color.web("#3b82f6"));
         gc.fillOval(x - RADIUS * SCALE_FACTOR, y - RADIUS * SCALE_FACTOR, RADIUS * 2 * SCALE_FACTOR, RADIUS * 2 * SCALE_FACTOR);
 
-        // Border with scaling applied
-        gc.setStroke(Color.web("#f3f4f6")); // Light border
-        gc.setLineWidth(1.5 * SCALE_FACTOR);
+        gc.setStroke(Color.web("#f3f4f6"));
+        gc.setLineWidth(2 * SCALE_FACTOR);
         gc.strokeOval(x - RADIUS * SCALE_FACTOR, y - RADIUS * SCALE_FACTOR, RADIUS * 2 * SCALE_FACTOR, RADIUS * 2 * SCALE_FACTOR);
 
         gc.applyEffect(null);
 
-        // Label inside node with scaling
         gc.setFill(Color.WHITE);
-        gc.setFont(Font.font("Arial", 13 * SCALE_FACTOR));
+        gc.setFont(Font.font("Arial", 18 * SCALE_FACTOR));  // Increased font size
         gc.setTextAlign(TextAlignment.CENTER);
-        gc.fillText(inter.getId(), x, y + 4 * SCALE_FACTOR);
+        gc.fillText(inter.getId(), x, y + 6 * SCALE_FACTOR);  // Adjusted position for larger text
 
-        // Traffic light
         if (inter.hasTrafficLight()) {
             TrafficLight light = inter.getTrafficLight();
             gc.setFill(light.isGreen() ? Color.LIMEGREEN : Color.RED);
-            gc.fillOval(x + RADIUS * SCALE_FACTOR - 6, y - RADIUS * SCALE_FACTOR + 6, 10 * SCALE_FACTOR, 10 * SCALE_FACTOR);
+            gc.fillOval(x + RADIUS * SCALE_FACTOR - 8, y - RADIUS * SCALE_FACTOR + 8, 14 * SCALE_FACTOR, 14 * SCALE_FACTOR); // Increased size of traffic light
         }
     }
 
     private void drawArrow(GraphicsContext gc, double x1, double y1, double x2, double y2) {
-        // Calculate the midpoint of the road (center)
         double midX = (x1 + x2) / 2;
         double midY = (y1 + y2) / 2;
 
-        // Calculate the angle for the arrowhead direction
         double angle = Math.atan2(y2 - y1, x2 - x1);
-        double len = 20 * SCALE_FACTOR; // Length of the arrow
+        double len = 30 * SCALE_FACTOR;  // Increased arrow size
 
-        // Coordinates of the two arrowhead lines, based on the midpoint
         double arrowX1 = midX - len * Math.cos(angle - Math.PI / 6);
         double arrowY1 = midY - len * Math.sin(angle - Math.PI / 6);
         double arrowX2 = midX - len * Math.cos(angle + Math.PI / 6);
         double arrowY2 = midY - len * Math.sin(angle + Math.PI / 6);
 
-        // Ensure the arrow lines are visible
-        gc.setLineWidth(3 * SCALE_FACTOR); // Make sure arrow lines are not too thin
-        gc.setStroke(Color.WHITE); // Ensure the arrow color contrasts with the background
+        gc.setLineWidth(4 * SCALE_FACTOR);  // Increased arrow width
+        gc.setStroke(Color.WHITE);
 
-        // Draw the two arrow lines from the midpoint
         gc.strokeLine(midX, midY, arrowX1, arrowY1);
         gc.strokeLine(midX, midY, arrowX2, arrowY2);
     }
 
+    // Helper method to get outline color based on the number of vehicles on the road
+    private Color getOutlineColor(int vehicleCount) {
+        if (vehicleCount < 5) {
+            return Color.web("#9ca3af"); // Light gray for low traffic
+        } else if (vehicleCount < 15) {
+            return Color.web("#f4c430"); // Yellow for moderate traffic
+        } else {
+            return Color.web("#ff4d6d"); // Red for heavy traffic
+        }
+    }
 
+    // Method to periodically update the vehicle count and road weights
+    private void startVehicleUpdate() {
+        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+            // Randomly add vehicles to random roads
+            for (Road road : cityMap.getRoads()) {
+                if (!road.isBlocked()) {
+                    // Randomly decide to add a vehicle
+                    if (random.nextDouble() < 0.1) { // 10% chance of adding a vehicle
+                        road.addVehicle();
+                    }
+                }
+            }
+            drawCity(); // Redraw the city with updated vehicle counts
+        }));
+        timeline.setCycleCount(Timeline.INDEFINITE);
+        timeline.play();
+    }
 
+    // Method to periodically update traffic light states (green/red)
+    private void startTrafficLightUpdate() {
+        Timeline trafficLightTimeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> {
+            // Toggle the traffic lights
+            for (Intersection intersection : cityMap.getIntersections()) {
+                if (intersection.hasTrafficLight()) {
+                    TrafficLight light = intersection.getTrafficLight();
+                    light.toggle(); // Switch the state (green/red)
+                }
+            }
+            drawCity(); // Redraw the city with updated traffic light states
+        }));
+        trafficLightTimeline.setCycleCount(Timeline.INDEFINITE);
+        trafficLightTimeline.play();
+    }
 }

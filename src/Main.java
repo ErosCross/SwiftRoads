@@ -9,7 +9,7 @@ import javafx.animation.RotateTransition;
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.ScrollEvent;
@@ -18,13 +18,11 @@ import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.transform.Scale;
 import javafx.stage.Stage;
-import javafx.scene.control.Button;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.scene.layout.StackPane;
 import javafx.geometry.Side;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.TextField;
+
 import java.net.URL;
 import java.io.IOException;
 
@@ -34,6 +32,8 @@ public class Main extends Application {
     private Scale scale;
     private MapView mapView;
     private boolean sfx = true; // Sound effects flag
+    private boolean isSettingsMenuOpen = false;
+    private boolean isInfoMenuOpen = false;
 
     public static void main(String[] args) {
         launch(args); // Launch the JavaFX application
@@ -56,14 +56,12 @@ public class Main extends Application {
         // Show splash screen
         splashStage.show();
 
-
         // Wait for splash screen to finish, then load the main window
         FadeTransition fadeOut = new FadeTransition(Duration.seconds(1), splashPane);
         fadeOut.setFromValue(1.0);
         fadeOut.setToValue(0.0); // Fade out effect
         fadeOut.setOnFinished(event -> {
             // When splash screen fades out, load the main application
-
             loadMainApp(primaryStage, splashStage); // Transition to main application after splash screen fades out
         });
         fadeOut.play();
@@ -98,6 +96,7 @@ public class Main extends Application {
 
         // Scene setup
         Scene scene = new Scene(root, width, height);
+        scene.getStylesheets().add(getClass().getResource("/resources/css/menu-dark.css").toExternalForm());
         primaryStage.setScene(scene); // Set scene to primary stage
         primaryStage.setResizable(true); // Allow resizing of the window
 
@@ -150,7 +149,14 @@ public class Main extends Application {
     }
 
 
-
+    private void applyContextMenuTheme(ContextMenu menu, boolean isDark) {
+        menu.getScene().getStylesheets().clear();
+        if (isDark) {
+            menu.getScene().getStylesheets().add(getClass().getResource("/resources/css/menu-dark.css").toExternalForm());
+        } else {
+            menu.getScene().getStylesheets().add(getClass().getResource("/resources/css/menu-light.css").toExternalForm());
+        }
+    }
 
 
     public void playClickSound() {
@@ -202,10 +208,9 @@ public class Main extends Application {
             mouseAnchorY = e.getSceneY();
         });
 
-        // --- Create and style Reset Button ---
+        // --- Reset Button ---
         Button resetButton = new Button();
         resetButton.setPrefSize(70, 70);
-
         String baseStyle = "-fx-background-color: green;" +
                 "-fx-background-radius: 35;" +
                 "-fx-border-radius: 35;" +
@@ -214,7 +219,6 @@ public class Main extends Application {
                 "-fx-effect: dropshadow(gaussian, darkgreen, 5, 0, 0, 0);";
         resetButton.setStyle(baseStyle);
 
-        // --- Center reset button at bottom ---
         root.widthProperty().addListener((obs, oldVal, newVal) -> {
             resetButton.setLayoutX((newVal.doubleValue() - resetButton.getPrefWidth()) / 2);
         });
@@ -222,13 +226,11 @@ public class Main extends Application {
             resetButton.setLayoutY(newVal.doubleValue() - resetButton.getPrefHeight() - 20);
         });
 
-        // --- Reset button icon ---
         ImageView resetImageView = new ImageView(getClass().getResource("/resources/img/focus.png").toExternalForm());
         resetImageView.setFitWidth(40);
         resetImageView.setFitHeight(40);
         resetButton.setGraphic(resetImageView);
 
-        // --- Animation on hover ---
         RotateTransition rotateTransition = new RotateTransition(Duration.seconds(1), resetImageView);
         rotateTransition.setByAngle(360);
         rotateTransition.setCycleCount(1);
@@ -258,21 +260,20 @@ public class Main extends Application {
 
         root.getChildren().add(resetButton);
 
-        // --- Create Search Fields ---
+        // --- Search Fields ---
         TextField startField = new TextField();
         startField.setPrefWidth(150);
         startField.setStyle("-fx-padding: 5px; -fx-font-size: 14px; -fx-background-color: #333; -fx-text-fill: white; -fx-border-color: #555;");
         startField.setLayoutX(15);
         startField.setLayoutY(30);
-        startField.setPromptText("start location"); // Placeholder text
+        startField.setPromptText("start location");
 
         TextField destinationField = new TextField();
         destinationField.setPrefWidth(150);
         destinationField.setStyle("-fx-padding: 5px; -fx-font-size: 14px; -fx-background-color: #333; -fx-text-fill: white; -fx-border-color: #555;");
         destinationField.setLayoutX(15);
         destinationField.setLayoutY(70);
-        destinationField.setPromptText("destination location"); // Placeholder text
-
+        destinationField.setPromptText("destination location");
 
         root.getChildren().addAll(startField, destinationField);
 
@@ -298,7 +299,6 @@ public class Main extends Application {
                             "-fx-border-width: 2;" +
                             "-fx-border-color: darkgreen;" +
                             "-fx-effect: dropshadow(gaussian, darkgreen, 10, 0, 0, 0);");
-
         });
 
         searchButton.setOnMouseExited(e -> searchButton.setStyle(baseStyle));
@@ -330,7 +330,6 @@ public class Main extends Application {
         infoImageView.setFitHeight(30);
         infoButton.setGraphic(infoImageView);
 
-        // Hover effect with sound for both
         settingsButton.setOnMouseEntered(e -> {
             playClickSound();
             settingsButton.setStyle("-fx-background-color: darkgreen;" +
@@ -355,7 +354,36 @@ public class Main extends Application {
 
         infoButton.setOnMouseExited(e -> infoButton.setStyle(baseStyle));
 
-        // Position settings/info buttons
+        // --- Info Popup Menu ---
+        ContextMenu infoMenu = new ContextMenu();
+        applyContextMenuTheme(infoMenu, true); // <<< Apply dark theme
+
+        MenuItem appInfo = new MenuItem("SwiftRoads - Urban Traffic Simulator");
+        MenuItem versionInfo = new MenuItem("Version 1.0.0");
+        MenuItem authorInfo = new MenuItem("Developed by Amit Shaviv");
+
+        appInfo.setDisable(true);
+        versionInfo.setDisable(true);
+        authorInfo.setDisable(true);
+
+        infoMenu.getItems().addAll(appInfo, versionInfo, authorInfo);
+
+        infoButton.setOnAction(e -> {
+            playClickSound();
+
+            if (isInfoMenuOpen) {
+                // Close the menu if it's already open
+                infoMenu.hide();
+            } else {
+                // Open the menu if it's closed
+                infoMenu.show(infoButton, Side.TOP, 0, -20); // Open 20px above the button
+            }
+
+            // Toggle the state of the menu
+            isInfoMenuOpen = !isInfoMenuOpen;
+        });
+
+        // Position buttons
         root.widthProperty().addListener((obs, oldVal, newVal) -> {
             settingsButton.setLayoutX((newVal.doubleValue() - settingsButton.getPrefWidth()) / 2 - 70);
             infoButton.setLayoutX((newVal.doubleValue() - infoButton.getPrefWidth()) / 2 + 70);
@@ -369,16 +397,15 @@ public class Main extends Application {
 
         // --- Settings Popup Menu ---
         ContextMenu settingsMenu = new ContextMenu();
+        applyContextMenuTheme(settingsMenu, true); // <<< Apply dark theme
 
-        // Theme Toggle
         CheckMenuItem themeToggle = new CheckMenuItem("Dark Theme");
-        themeToggle.setSelected(true); // Default ON (dark theme)
+        themeToggle.setSelected(true);
         themeToggle.setOnAction(e -> {
             playClickSound();
             boolean isDark = themeToggle.isSelected();
             System.out.println("Theme toggled: " + (isDark ? "Dark" : "Light"));
 
-            // Apply to the root node or scene instead
             Scene scene = root.getScene();
             if (scene != null) {
                 scene.getStylesheets().clear();
@@ -387,68 +414,51 @@ public class Main extends Application {
                 } else {
                     scene.getStylesheets().add(getClass().getResource("/resources/css/menu-light.css").toExternalForm());
                 }
+
+                applyContextMenuTheme(settingsMenu, isDark);
+                applyContextMenuTheme(infoMenu, isDark);
             }
         });
 
-        // Sound Toggle
         CheckMenuItem soundToggle = new CheckMenuItem("Enable Sounds");
         soundToggle.setSelected(true);
         soundToggle.setOnAction(e -> {
             playClickSound();
-            System.out.println("Sounds: " + (soundToggle.isSelected() ? "Enabled" : "Muted"));
             this.sfx = !this.sfx;
-            // You might set a global boolean to control whether to call playClickSound
+            System.out.println("Sounds: " + (soundToggle.isSelected() ? "Enabled" : "Muted"));
         });
 
         settingsMenu.getItems().addAll(themeToggle, soundToggle);
 
-        // Show popup on settings click
+
+
         settingsButton.setOnAction(e -> {
             playClickSound();
-            // Position the menu above the settings button
-            settingsMenu.show(settingsButton, Side.TOP, 0, -10);
+
+            if (isSettingsMenuOpen) {
+                // Close the menu if it's already open
+                settingsMenu.hide();
+            } else {
+                // Open the menu if it's closed
+                settingsMenu.show(settingsButton, Side.TOP, -15, -20); // Open 20px above the button
+            }
+
+            // Toggle the state of the menu
+            isSettingsMenuOpen = !isSettingsMenuOpen;
         });
+
     }
 
+
+
+    // --- Reset Map View ---
     private void resetMapView(CityMap cityMap, AnchorPane root) {
-        // Remove only the mapView, not the whole root's children
-        root.getChildren().remove(mapView);
-
-        // Recreate the map view with the city map
-        mapView = new MapView(cityMap);
-        mapView.getTransforms().add(scale); // Apply scaling to the map view
-
-        // Reinitialize scale and translation
+        // Reset zoom and position
         scale.setX(1);
         scale.setY(1);
         translateX = 0;
         translateY = 0;
-
-        // Calculate bounds
-        double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE;
-        double maxX = Double.MIN_VALUE, maxY = Double.MIN_VALUE;
-
-        for (Intersection intersection : cityMap.getIntersections()) {
-            minX = Math.min(minX, intersection.getX());
-            minY = Math.min(minY, intersection.getY());
-            maxX = Math.max(maxX, intersection.getX());
-            maxY = Math.max(maxY, intersection.getY());
-        }
-
-        double centerX = (minX + maxX) / 2;
-        double centerY = (minY + maxY) / 2;
-
-        double width = mapView.getWidth();
-        double height = mapView.getHeight();
-
-        translateX = (width / 2) - centerX;
-        translateY = (height / 2) - centerY;
-
         mapView.setTranslateX(translateX);
         mapView.setTranslateY(translateY);
-
-        root.getChildren().add(0, mapView); // Add only the new map view to the bottom layer
-
-        System.out.println("Map reset and redrawn. TranslateX: " + translateX + ", TranslateY: " + translateY);
     }
 }
