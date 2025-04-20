@@ -2,9 +2,10 @@ import com.io.CityLoader;
 import com.io.TrafficLightLoader;
 import com.model.CityMap;
 import com.model.Intersection;
+import com.model.Road;
+import com.pathfinding.PathFinder;
 import com.ui.MapView;
 import javafx.animation.FadeTransition;
-import javafx.animation.PauseTransition;
 import javafx.animation.RotateTransition;
 import javafx.application.Application;
 import javafx.geometry.Pos;
@@ -25,6 +26,10 @@ import javafx.geometry.Side;
 
 import java.net.URL;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class Main extends Application {
     private double mouseAnchorX, mouseAnchorY;
@@ -176,6 +181,12 @@ public class Main extends Application {
             }
         }
     }
+    private void highlightPath(List<Road> path) {
+        for (Road road : path) {
+            // For each road in the path, you can modify its visual representation
+            road.setStyle("-fx-stroke: red; -fx-stroke-width: 4;");  // Example styling
+        }
+    }
 
     public void addItems(AnchorPane root, CityMap cityMap) {
         // --- Enable zooming via mouse scroll ---
@@ -303,11 +314,74 @@ public class Main extends Application {
 
         searchButton.setOnMouseExited(e -> searchButton.setStyle(baseStyle));
 
+        // Create a new context menu for displaying top paths
+        ContextMenu pathMenu = new ContextMenu();
+
+
+
+        // Add action listener to search button
         searchButton.setOnAction(e -> {
             String start = startField.getText();
             String dest = destinationField.getText();
             System.out.println("Searching for route from " + start + " to " + dest);
+
+            // Assuming CityMap has a method that can get an intersection by name or coordinates
+            Intersection startIntersection = cityMap.getIntersectionByName(start);
+            Intersection destinationIntersection = cityMap.getIntersectionByName(dest);
+
+            if (startIntersection == null || destinationIntersection == null) {
+                System.out.println("Invalid start or destination location.");
+                // Optionally show an error message to the user here
+            } else {
+                // Use the pathfinding algorithm to find the shortest path and get previous roads
+                Map<Intersection, Road> previousRoads = PathFinder.findShortestPath(startIntersection, destinationIntersection, cityMap.getRoads());
+
+                // Reconstruct the path manually from the previousRoads map
+                List<Road> path = new ArrayList<>();
+                Intersection currentIntersection = destinationIntersection;
+
+                while (currentIntersection != null && previousRoads.containsKey(currentIntersection)) {
+                    Road road = previousRoads.get(currentIntersection);
+                    path.add(road);
+                    currentIntersection = road.getSource();  // Move to the source intersection
+                }
+
+                // Reverse the path because we reconstructed it backwards
+                Collections.reverse(path);
+
+                // Create a list of intersection names (e.g., "a", "b", "c", "d")
+                List<String> pathIntersections = new ArrayList<>();
+                for (Road road : path) {
+                    pathIntersections.add(road.getSource().getId());  // Assuming getId() returns the intersection name
+                }
+                // Add the final destination intersection name
+                if (!path.isEmpty()) {
+                    pathIntersections.add(path.get(path.size() - 1).getDestination().getId());
+                }
+
+                // Convert list of intersections to a readable format
+                String pathText = String.join(" -> ", pathIntersections);
+
+                // Create menu item with the path and distance
+                MenuItem pathItem = new MenuItem("Path: " + pathText + " (Distance: " + PathFinder.calculatePathDistance(path) + ")");
+                pathItem.setOnAction(event -> {
+                    highlightPath(path);  // Highlight the selected path
+                });
+
+                // Clear existing items in the path menu
+                pathMenu.getItems().clear();
+                pathMenu.getItems().add(pathItem);
+
+                // Show the new path menu next to the search button
+                pathMenu.show(searchButton, Side.TOP, 0, -20); // Open 20px above the button
+            }
         });
+
+
+
+
+
+
 
         root.getChildren().add(searchButton);
 
@@ -430,8 +504,6 @@ public class Main extends Application {
 
         settingsMenu.getItems().addAll(themeToggle, soundToggle);
 
-
-
         settingsButton.setOnAction(e -> {
             playClickSound();
 
@@ -446,8 +518,8 @@ public class Main extends Application {
             // Toggle the state of the menu
             isSettingsMenuOpen = !isSettingsMenuOpen;
         });
-
     }
+
 
 
 

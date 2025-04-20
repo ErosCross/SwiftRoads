@@ -16,6 +16,16 @@ public class CityMap {
         intersections.put(id, new Intersection(id, x, y));
     }
 
+    // Method to get an intersection by its name (new method)
+    public Intersection getIntersectionByName(String name) {
+        for (Intersection intersection : intersections.values()) {
+            if (intersection.getId().equalsIgnoreCase(name)) {
+                return intersection;
+            }
+        }
+        return null; // Return null if no intersection is found by that name
+    }
+
     // Method to get or create an intersection with coordinates
     public Intersection getOrCreateIntersection(String id, double x, double y) {
         return intersections.computeIfAbsent(id, k -> new Intersection(id, x, y));

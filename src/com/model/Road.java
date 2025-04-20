@@ -1,20 +1,24 @@
 package com.model;
 
-public class Road {
-    private Intersection source;
-    private Intersection destination;
-    private double length;
-    private boolean isOneWay;
-    private boolean isBlocked;
-    private int vehicleCount; // Number of vehicles on the road
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 
-    public Road(Intersection source, Intersection destination, double length, boolean isOneWay, boolean isBlocked) {
+public class Road {
+    private static final double SCALE_FACTOR = 2.5;
+    protected Intersection source;
+    protected Intersection destination;
+    protected double length;
+    protected boolean isBlocked;
+    protected int vehicleCount;
+    protected String style;  // New property to store the style of the road
+
+    public Road(Intersection source, Intersection destination, double length, boolean isBlocked) {
         this.source = source;
         this.destination = destination;
         this.length = length;
-        this.isOneWay = isOneWay;
         this.isBlocked = isBlocked;
-        this.vehicleCount = 0; // Initially no vehicles
+        this.vehicleCount = 0;
+        this.style = ""; // Default style is an empty string (no style)
     }
 
     public Intersection getSource() {
@@ -30,7 +34,7 @@ public class Road {
     }
 
     public boolean isOneWay() {
-        return isOneWay;
+        return false; // Default for base class
     }
 
     public boolean isBlocked() {
@@ -51,26 +55,22 @@ public class Road {
         }
     }
 
-
-    // Calculate the weight of the road based on vehicles, blockage, length, and one-way status
     public double calculateWeight() {
         if (isBlocked) {
-            return Double.POSITIVE_INFINITY; // Blocked roads have infinite weight
+            return Double.POSITIVE_INFINITY;
         }
 
-        double trafficFactor = 1 + (vehicleCount / 10.0); // Traffic factor based on vehicles (adjust /10 based on road capacity)
-        double directionFactor = isOneWay ? 1 : 1.5; // One-way roads are faster
+        double trafficFactor = 1 + (vehicleCount / 10.0);
+        double directionFactor = 1.5; // Two-way roads are slower
 
-        // Check if either source or destination intersection has a traffic light
         double trafficLightFactor = 1.0;
         if (source.hasTrafficLight() || destination.hasTrafficLight()) {
-            trafficLightFactor = 1.5; // Increase weight if any intersection has a traffic light
+            trafficLightFactor = 1.5;
         }
 
         return length * trafficFactor * directionFactor * trafficLightFactor;
     }
 
-    // Method to return the scaled coordinates of the source and destination intersections
     public double[] getScaledCoordinates(double scaleFactor) {
         double sourceX = source.getX() * scaleFactor;
         double sourceY = source.getY() * scaleFactor;
@@ -79,4 +79,59 @@ public class Road {
 
         return new double[]{sourceX, sourceY, destX, destY};
     }
+
+    public double getStyleWidth() {
+        if (isBlocked()) {
+            return 9 * SCALE_FACTOR; // Blocked roads are thicker and red (as per the earlier code)
+        }
+
+        // Use thinner line for one-way roads
+        if (this instanceof OneWayRoad) {
+            return 4 * SCALE_FACTOR; // One-way roads have thinner lines
+        }
+
+        return 9 * SCALE_FACTOR; // Default thickness for two-way roads
+    }
+
+
+
+
+    // New method to set the style of the road
+    public void setStyle(String style) {
+        this.style = style;
+    }
+
+    // Method to get the current style of the road
+    public String getStyle() {
+        return style;
+    }
+
+    public void reset() {
+        this.isBlocked = false; // Reset the blocked status
+        this.vehicleCount = 0;   // Reset the vehicle count
+        this.style = "";         // Reset the style
+    }
+
+    public Paint getStyleColor() {
+        if (isBlocked()) {
+            return Color.RED; // Blocked roads are red
+        }
+
+        // Adjust color based on vehicle count
+        int vehicleCount = getVehicleCount();
+        if (vehicleCount < 5) {
+            return Color.web("#9ca3af"); // Light gray for low traffic
+        } else if (vehicleCount < 15) {
+            return Color.web("#f4c430"); // Yellow for moderate traffic
+        } else {
+            return Color.web("#ff4d6d"); // Red for heavy traffic
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "a";
+    }
+
+
 }
