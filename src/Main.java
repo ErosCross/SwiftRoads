@@ -15,6 +15,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.transform.Scale;
@@ -316,67 +317,62 @@ public class Main extends Application {
 
         // Create a new context menu for displaying top paths
         ContextMenu pathMenu = new ContextMenu();
+        applyContextMenuTheme(pathMenu, true); // Optional: apply dark theme if needed
 
-
-
-        // Add action listener to search button
+// Add action listener to search button
         searchButton.setOnAction(e -> {
             String start = startField.getText();
             String dest = destinationField.getText();
             System.out.println("Searching for route from " + start + " to " + dest);
 
-            // Assuming CityMap has a method that can get an intersection by name or coordinates
             Intersection startIntersection = cityMap.getIntersectionByName(start);
             Intersection destinationIntersection = cityMap.getIntersectionByName(dest);
 
             if (startIntersection == null || destinationIntersection == null) {
                 System.out.println("Invalid start or destination location.");
-                // Optionally show an error message to the user here
             } else {
-                // Use the pathfinding algorithm to find the shortest path and get previous roads
-                Map<Intersection, Road> previousRoads = PathFinder.findShortestPath(startIntersection, destinationIntersection, cityMap.getRoads());
-
-                // Reconstruct the path manually from the previousRoads map
-                List<Road> path = new ArrayList<>();
-                Intersection currentIntersection = destinationIntersection;
-
-                while (currentIntersection != null && previousRoads.containsKey(currentIntersection)) {
-                    Road road = previousRoads.get(currentIntersection);
-                    path.add(road);
-                    currentIntersection = road.getSource();  // Move to the source intersection
-                }
-
-                // Reverse the path because we reconstructed it backwards
-                Collections.reverse(path);
-
-                // Create a list of intersection names (e.g., "a", "b", "c", "d")
-                List<String> pathIntersections = new ArrayList<>();
-                for (Road road : path) {
-                    pathIntersections.add(road.getSource().getId());  // Assuming getId() returns the intersection name
-                }
-                // Add the final destination intersection name
-                if (!path.isEmpty()) {
-                    pathIntersections.add(path.get(path.size() - 1).getDestination().getId());
-                }
-
-                // Convert list of intersections to a readable format
-                String pathText = String.join(" -> ", pathIntersections);
-
-                // Create menu item with the path and distance
-                MenuItem pathItem = new MenuItem("Path: " + pathText + " (Distance: " + PathFinder.calculatePathDistance(path) + ")");
-                pathItem.setOnAction(event -> {
-                    highlightPath(path);  // Highlight the selected path
-                });
+                // Get up to 3 top paths
+                List<List<Road>> topPaths = PathFinder.findTopKPaths(startIntersection, destinationIntersection, cityMap.getRoads(), 3);
 
                 // Clear existing items in the path menu
                 pathMenu.getItems().clear();
-                pathMenu.getItems().add(pathItem);
 
-                // Show the new path menu next to the search button
-                pathMenu.show(searchButton, Side.TOP, 0, -20); // Open 20px above the button
+                if (topPaths.isEmpty()) {
+                    MenuItem noPathItem = new MenuItem("No valid path found.");
+                    noPathItem.setDisable(true);
+                    pathMenu.getItems().add(noPathItem);
+                } else {
+                    int index = 1;
+                    for (List<Road> path : topPaths) {
+                        // Create a list of intersection names
+                        List<String> pathIntersections = new ArrayList<>();
+                        for (Road road : path) {
+                            pathIntersections.add(road.getSource().getId());
+                        }
+                        if (!path.isEmpty()) {
+                            pathIntersections.add(path.get(path.size() - 1).getDestination().getId());
+                        }
+
+                        // Convert to readable string
+                        String pathText = String.join(" -> ", pathIntersections);
+                        double distance = PathFinder.calculatePathDistance(path);
+
+                        MenuItem pathItem = new MenuItem("Path " + index + ": " + pathText + " (Distance: " + distance + " KM)");
+                        int finalIndex = index;
+                        pathItem.setOnAction(event -> {
+                            System.out.println("Selected Path " + finalIndex);
+                            highlightPath(path);
+                        });
+
+                        pathMenu.getItems().add(pathItem);
+                        index++;
+                    }
+                }
+
+                // Show the menu near the button
+                pathMenu.show(searchButton, Side.TOP, 0, -20);
             }
         });
-
 
 
 
@@ -519,6 +515,7 @@ public class Main extends Application {
             isSettingsMenuOpen = !isSettingsMenuOpen;
         });
     }
+
 
 
 
