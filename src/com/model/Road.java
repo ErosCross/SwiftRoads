@@ -5,6 +5,7 @@ import javafx.scene.paint.Paint;
 
 public class Road {
     private static final double SCALE_FACTOR = 2.5;
+    private boolean highlighted;
     protected Intersection source;
     protected Intersection destination;
     protected double length;
@@ -19,6 +20,7 @@ public class Road {
         this.isBlocked = isBlocked;
         this.vehicleCount = 0;
         this.style = ""; // Default style is an empty string (no style)
+        this.highlighted = false;
     }
 
     public Intersection getSource() {
@@ -61,14 +63,14 @@ public class Road {
         }
 
         double trafficFactor = 1 + (vehicleCount / 10.0);
-        double directionFactor = 1.5; // Two-way roads are slower
+
 
         double trafficLightFactor = 1.0;
         if (source.hasTrafficLight() || destination.hasTrafficLight()) {
             trafficLightFactor = 1.5;
         }
 
-        return length * trafficFactor * directionFactor * trafficLightFactor;
+        return length * trafficFactor  * trafficLightFactor;
     }
 
     public double[] getScaledCoordinates(double scaleFactor) {
@@ -116,21 +118,32 @@ public class Road {
         if (isBlocked()) {
             return Color.RED; // Blocked roads are red
         }
+        if (this.highlighted) {
 
+            return Color.web("#00AD83");
+        }
         // Adjust color based on vehicle count
         int vehicleCount = getVehicleCount();
-        if (vehicleCount < 5) {
+        if (vehicleCount < 15) {
             return Color.web("#9ca3af"); // Light gray for low traffic
-        } else if (vehicleCount < 15) {
+        } else if (vehicleCount < 60) {
             return Color.web("#f4c430"); // Yellow for moderate traffic
         } else {
             return Color.web("#ff4d6d"); // Red for heavy traffic
         }
     }
 
+    public void highlightRoad() {
+
+        this.highlighted = !this.highlighted;
+
+
+
+    }
+
     @Override
     public String toString() {
-        return "a";
+        return this.source.getId() + " -> " + this.destination.getId();
     }
 
 

@@ -6,16 +6,17 @@ import com.model.Road;
 import com.pathfinding.PathFinder;
 import com.ui.MapView;
 import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
 import javafx.animation.RotateTransition;
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.transform.Scale;
@@ -24,13 +25,10 @@ import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.scene.layout.StackPane;
 import javafx.geometry.Side;
-
 import java.net.URL;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 public class Main extends Application {
     private double mouseAnchorX, mouseAnchorY;
@@ -183,11 +181,32 @@ public class Main extends Application {
         }
     }
     private void highlightPath(List<Road> path) {
-        for (Road road : path) {
-            // For each road in the path, you can modify its visual representation
-            road.setStyle("-fx-stroke: red; -fx-stroke-width: 4;");  // Example styling
+        // Loop through the list of roads and highlight them one by one with a delay
+        for (int i = 0; i < path.size(); i++) {
+            final Road road = path.get(i);  // Get the current road
+            // Add a delay before highlighting each road
+            PauseTransition pause = new PauseTransition(Duration.seconds(3 * i));  // 3 seconds per road (increasing delay for each)
+
+            pause.setOnFinished(event -> {
+                // Highlight the road when the pause is finished
+                road.highlightRoad(); // Green color with a thicker line
+
+                // After the highlight, wait another 3 seconds before disabling the highlight
+                PauseTransition disableHighlightPause = new PauseTransition(Duration.seconds(3));
+                disableHighlightPause.setOnFinished(disableEvent -> {
+                    // Disable the highlight
+                    road.highlightRoad(); // Call again to disable highlight (or reset style)
+                });
+                disableHighlightPause.play(); // Start the disable highlight pause
+            });
+
+            pause.play(); // Start the pause for the current road
         }
     }
+
+
+
+
 
     public void addItems(AnchorPane root, CityMap cityMap) {
         // --- Enable zooming via mouse scroll ---
@@ -362,6 +381,7 @@ public class Main extends Application {
                         pathItem.setOnAction(event -> {
                             System.out.println("Selected Path " + finalIndex);
                             highlightPath(path);
+
                         });
 
                         pathMenu.getItems().add(pathItem);

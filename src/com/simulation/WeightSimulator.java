@@ -7,32 +7,59 @@ import java.util.Random;
 
 public class WeightSimulator {
     private CityMap cityMap;
-    private static final int MAX_VEHICLES = 50; // Maximum number of vehicles to generate
+    private static final int INITIAL_VEHICLES = 25; // Default vehicles for most roads
+    private static final int SPECIAL_VEHICLES = 70; // Special case: 70 vehicles for A -> C
+    private static final int MAX_CHANGE = 5; // Max number of vehicles to add or remove per step
     private static final Random random = new Random();
 
+
     public WeightSimulator(CityMap cityMap) {
-        this.cityMap = cityMap;
+        this(cityMap, true); // Default: initialize traffic
     }
 
-    // Generate a random number of vehicles for each road and update weights
-    public void simulateTraffic() {
+    public WeightSimulator(CityMap cityMap, boolean initializeTraffic) {
+        this.cityMap = cityMap;
+        if (initializeTraffic) {
+            initializeTraffic();
+        }
+    }
+
+    // Initialize traffic
+    private void initializeTraffic() {
         for (Road road : cityMap.getRoads()) {
-            // Randomly assign vehicles to roads, ensuring it makes sense logically
-            int vehicleCount = random.nextInt(MAX_VEHICLES); // Random vehicle count
-            for (int i = 0; i < vehicleCount; i++) {
-                road.addVehicle(); // Add vehicle to the road
+            int vehiclesToAdd = INITIAL_VEHICLES;
+            if (road.getSource().getId().equals("A") && road.getDestination().getId().equals("C")) {
+                vehiclesToAdd = SPECIAL_VEHICLES;
             }
 
-            // Calculate and print road weight after vehicles are added
-            System.out.println("Road: " + road.getSource().getId() + " -> " + road.getDestination().getId());
-            System.out.println("Weight: " + road.calculateWeight());
+
+
+            for (int i = 0; i < vehiclesToAdd; i++) {
+                road.addVehicle();
+            }
         }
     }
 
-    // Remove vehicles from roads logically (could be based on vehicle travel or a time step)
-    public void clearVehicles() {
+    // Simulate adding or removing random number of vehicles
+    public void simulateTraffic() {
         for (Road road : cityMap.getRoads()) {
-            road.removeVehicle(); // Clear the vehicle count for each road (simulation step)
+            int change = random.nextInt(MAX_CHANGE + 1);
+            boolean addVehicles = random.nextBoolean();
+            if (addVehicles) {
+                for (int i = 0; i < change; i++) {
+                    road.addVehicle();
+                }
+            } else {
+                for (int i = 0; i < change; i++) {
+                    road.removeVehicle();
+                }
+            }
+
+            //System.out.println("Road: " + road.getSource().getId() + " -> " + road.getDestination().getId());
+            //System.out.println("Vehicles: " + road.getVehicleCount());
+            //System.out.println("Weight: " + road.calculateWeight());
         }
     }
+
+
 }

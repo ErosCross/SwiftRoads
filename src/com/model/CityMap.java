@@ -26,10 +26,7 @@ public class CityMap {
         return null; // Return null if no intersection is found by that name
     }
 
-    // Method to get or create an intersection with coordinates
-    public Intersection getOrCreateIntersection(String id, double x, double y) {
-        return intersections.computeIfAbsent(id, k -> new Intersection(id, x, y));
-    }
+
 
     // Method to get all roads in the city
     public List<Road> getRoads() {
