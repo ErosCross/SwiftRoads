@@ -4,7 +4,6 @@ SwiftRoads is an intelligent urban traffic management system built in Java. It s
 
 ## Features
 
-- 🛣️ Simulated city with 60+ intersections and 100+ roads  
 - 🚥 Realistic traffic light timing  
 - 🔍 Route search with Dijkstra and Yen's K-shortest path algorithms  
 - 🧠 Visual path highlighting with details popup  
